@@ -417,34 +417,38 @@
         <h2 class="section-heading">Bagi jaringan dengan VLSM</h2>
         <p class="hint">Masukkan network induk dan jumlah host yang dibutuhkan setiap subnet.</p>
 
-        <form>
+        <form id="vlsm-form">
           <div class="field">
             <label for="network-cidr">Network CIDR</label>
-            <input id="network-cidr" name="network" type="text" placeholder="Contoh: 192.168.1.0/24" autocomplete="off">
+            <input id="network-cidr" name="network" type="text" placeholder="Contoh: 192.168.1.0/24" autocomplete="off" aria-describedby="vlsm-error">
           </div>
 
           <div class="vlsm-fields">
             <span class="field-label">Kebutuhan host</span>
-            <div class="host-row">
-              <div class="field">
-                <label for="host-1">Subnet 1</label>
-                <input id="host-1" name="kebutuhan_host[]" type="number" min="1" step="1" placeholder="Contoh: 100">
+            <div id="host-rows">
+              <div class="host-row">
+                <div class="field">
+                  <label for="host-1">Subnet 1</label>
+                  <input id="host-1" name="kebutuhan_host[]" type="number" min="1" step="1" placeholder="Contoh: 100" aria-describedby="vlsm-error">
+                </div>
+                <button class="secondary" type="button" data-remove-host aria-label="Hapus kebutuhan subnet 1">Hapus</button>
               </div>
-              <button class="secondary" type="button" aria-label="Hapus kebutuhan subnet 1">Hapus</button>
             </div>
-            <button class="secondary" type="button">+ Tambah kebutuhan</button>
+            <button class="secondary" id="add-host" type="button">+ Tambah kebutuhan</button>
           </div>
 
           <div class="vlsm-actions">
-            <button class="primary" type="button">Alokasikan VLSM</button>
+            <button class="primary" type="submit">Alokasikan VLSM</button>
           </div>
         </form>
 
-        <div class="empty-state" role="status">
+        <div class="empty-state" id="vlsm-empty" role="status">
           <p>Tabel alokasi subnet akan muncul di sini setelah network dan kebutuhan host diisi.</p>
         </div>
 
-        <div class="table-wrap" hidden>
+        <div class="error-state" id="vlsm-error" role="alert" hidden></div>
+
+        <div class="table-wrap" id="vlsm-result" hidden>
           <table>
             <thead>
               <tr>
@@ -456,20 +460,9 @@
                 <th scope="col">Host usable</th>
               </tr>
             </thead>
-            <tbody>
-              <tr>
-                <td>100</td>
-                <td class="code">192.168.1.0/25</td>
-                <td class="code">255.255.255.128</td>
-                <td class="code">192.168.1.127</td>
-                <td class="code">192.168.1.1–192.168.1.126</td>
-                <td>126</td>
-              </tr>
-            </tbody>
+            <tbody id="vlsm-result-rows"></tbody>
           </table>
         </div>
-
-        <div class="error-state" role="alert" hidden>Contoh pesan error: kebutuhan host tidak muat dalam network yang diberikan.</div>
       </section>
     </section>
   </main>
@@ -481,6 +474,12 @@
     const subnetEmpty = document.querySelector("#subnet-empty");
     const subnetError = document.querySelector("#subnet-error");
     const subnetResult = document.querySelector("#subnet-result");
+    const vlsmForm = document.querySelector("#vlsm-form");
+    const hostRows = document.querySelector("#host-rows");
+    const vlsmEmpty = document.querySelector("#vlsm-empty");
+    const vlsmError = document.querySelector("#vlsm-error");
+    const vlsmResult = document.querySelector("#vlsm-result");
+    const vlsmResultRows = document.querySelector("#vlsm-result-rows");
     const resultFields = {
       mask: document.querySelector("#result-mask"),
       network: document.querySelector("#result-network"),
@@ -489,6 +488,16 @@
       last_host: document.querySelector("#result-last-host"),
       usable_hosts: document.querySelector("#result-usable-hosts"),
     };
+    let nextHostRowNumber = 2;
+
+    function updateHostRemoveButtons() {
+      const disableRemove = hostRows.children.length === 1;
+      hostRows.querySelectorAll("[data-remove-host]").forEach((button) => {
+        button.disabled = disableRemove;
+      });
+    }
+
+    updateHostRemoveButtons();
 
     tabs.forEach((tab) => {
       tab.addEventListener("click", () => {
@@ -497,6 +506,45 @@
           panel.hidden = panel.id !== tab.getAttribute("aria-controls");
         });
       });
+    });
+
+    document.querySelector("#add-host").addEventListener("click", () => {
+      const rowNumber = nextHostRowNumber++;
+      const row = document.createElement("div");
+      row.className = "host-row";
+
+      const field = document.createElement("div");
+      field.className = "field";
+      const label = document.createElement("label");
+      label.htmlFor = `host-${rowNumber}`;
+      label.textContent = `Subnet ${rowNumber}`;
+      const input = document.createElement("input");
+      input.id = `host-${rowNumber}`;
+      input.name = "kebutuhan_host[]";
+      input.type = "number";
+      input.min = "1";
+      input.step = "1";
+      input.placeholder = "Jumlah host";
+      input.setAttribute("aria-describedby", "vlsm-error");
+      field.append(label, input);
+
+      const removeButton = document.createElement("button");
+      removeButton.className = "secondary";
+      removeButton.type = "button";
+      removeButton.dataset.removeHost = "";
+      removeButton.setAttribute("aria-label", `Hapus kebutuhan subnet ${rowNumber}`);
+      removeButton.textContent = "Hapus";
+
+      row.append(field, removeButton);
+      hostRows.append(row);
+      updateHostRemoveButtons();
+    });
+
+    hostRows.addEventListener("click", (event) => {
+      if (event.target instanceof Element && event.target.matches("[data-remove-host]")) {
+        event.target.closest(".host-row").remove();
+        updateHostRemoveButtons();
+      }
     });
 
     subnetForm.addEventListener("submit", async (event) => {
@@ -528,6 +576,61 @@
           ? error.message
           : "Tidak dapat terhubung ke server. Coba lagi.";
         subnetError.hidden = false;
+      }
+    });
+
+    vlsmForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      vlsmEmpty.hidden = true;
+      vlsmError.hidden = true;
+      vlsmResult.hidden = true;
+
+      const requirements = [...hostRows.querySelectorAll('input[name="kebutuhan_host[]"]')]
+        .map((input) => input.value.trim() === "" ? null : Number(input.value));
+
+      try {
+        const response = await fetch("/api/vlsm", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            network: vlsmForm.elements.network.value,
+            kebutuhan_host: requirements,
+          }),
+        });
+        const body = await response.json();
+
+        if (!response.ok) {
+          throw new Error(body.detail || "Alokasi VLSM gagal.");
+        }
+
+        vlsmResultRows.replaceChildren();
+        body.forEach((block) => {
+          const row = document.createElement("tr");
+          const values = [
+            block.kebutuhan,
+            block.network_cidr,
+            block.mask,
+            block.broadcast === null ? "Tidak ada" : block.broadcast,
+            `${block.first_host}–${block.last_host}`,
+            block.usable_hosts,
+          ];
+
+          values.forEach((value, index) => {
+            const cell = document.createElement("td");
+            cell.textContent = String(value);
+            if ([1, 2, 3, 4].includes(index)) {
+              cell.className = "code";
+            }
+            row.append(cell);
+          });
+          vlsmResultRows.append(row);
+        });
+        vlsmResult.hidden = false;
+      } catch (error) {
+        vlsmError.textContent = error instanceof Error
+          ? error.message
+          : "Tidak dapat terhubung ke server. Coba lagi.";
+        vlsmError.hidden = false;
       }
     });
   </script>
