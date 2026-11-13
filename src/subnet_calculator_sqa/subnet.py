@@ -1,4 +1,5 @@
 import ipaddress
+import re
 
 
 class SubnetError(ValueError):
@@ -9,34 +10,43 @@ def calculate(ip: str, prefix: int) -> dict:
     if isinstance(prefix, bool) or not isinstance(prefix, int) or not 0 <= prefix <= 32:
         raise SubnetError("Prefix harus berupa angka 0 sampai 32.")
 
-    try:
-        addr = ipaddress.IPv4Address(ip.strip())
-    except ipaddress.AddressValueError:
-        raise SubnetError("Alamat IP tidak valid.")
+    if not isinstance(ip, str) or re.fullmatch(
+        r"(?:0|[1-9][0-9]{0,2})(?:\.(?:0|[1-9][0-9]{0,2})){3}",
+        ip,
+    ) is None:
+        raise SubnetError("Alamat IP harus berupa IPv4 tanpa spasi atau nol di depan.")
 
-    net = ipaddress.IPv4Network((addr, prefix), strict=False)
-    total = net.num_addresses
+    octets = [int(octet) for octet in ip.split(".")]
+    if any(octet > 255 for octet in octets):
+        raise SubnetError("Setiap oktet alamat IPv4 harus bernilai 0 sampai 255.")
+
+    ip_value = int(ipaddress.IPv4Address(ip))
+    mask_value = 0 if prefix == 0 else (0xFFFFFFFF << (32 - prefix)) & 0xFFFFFFFF
+    network_value = ip_value & mask_value
+    network = ipaddress.IPv4Address(network_value)
+    mask = ipaddress.IPv4Address(mask_value)
 
     if prefix == 32:
-        first = last = net.network_address
+        first = last = network
+        broadcast = None
         usable = 1
     elif prefix == 31:
-        first, last = net.network_address, net.broadcast_address
+        first = network
+        last = ipaddress.IPv4Address(network_value + 1)
+        broadcast = None
         usable = 2
     else:
-        first = net.network_address + 1
-        last = net.broadcast_address - 1
-        usable = total - 2
+        broadcast_value = network_value | (~mask_value & 0xFFFFFFFF)
+        broadcast = ipaddress.IPv4Address(broadcast_value)
+        first = ipaddress.IPv4Address(network_value + 1)
+        last = ipaddress.IPv4Address(broadcast_value - 1)
+        usable = (1 << (32 - prefix)) - 2
 
     return {
-        "ip": str(addr),
-        "prefix": prefix,
-        "network": str(net.network_address),
-        "broadcast": str(net.broadcast_address),
-        "netmask": str(net.netmask),
-        "wildcard": str(net.hostmask),
+        "mask": str(mask),
+        "network": str(network),
+        "broadcast": str(broadcast) if broadcast is not None else None,
         "first_host": str(first),
         "last_host": str(last),
-        "total_addresses": total,
         "usable_hosts": usable,
     }

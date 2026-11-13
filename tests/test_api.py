@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 
 from subnet_calculator_sqa.api import app
@@ -5,28 +6,82 @@ from subnet_calculator_sqa.api import app
 client = TestClient(app)
 
 
-def test_api_sukses():
-    r = client.get("/api/subnet", params={"ip": "192.168.10.77", "prefix": 26})
-    assert r.status_code == 200
-    body = r.json()
-    assert body["network"] == "192.168.10.64"
-    assert body["usable_hosts"] == 62
+@pytest.mark.parametrize(
+    ("ip", "prefix", "expected"),
+    [
+        (
+            "172.16.5.130",
+            25,
+            {
+                "mask": "255.255.255.128",
+                "network": "172.16.5.128",
+                "broadcast": "172.16.5.255",
+                "first_host": "172.16.5.129",
+                "last_host": "172.16.5.254",
+                "usable_hosts": 126,
+            },
+        ),
+        (
+            "192.168.1.0",
+            31,
+            {
+                "mask": "255.255.255.254",
+                "network": "192.168.1.0",
+                "broadcast": None,
+                "first_host": "192.168.1.0",
+                "last_host": "192.168.1.1",
+                "usable_hosts": 2,
+            },
+        ),
+        (
+            "192.168.1.5",
+            32,
+            {
+                "mask": "255.255.255.255",
+                "network": "192.168.1.5",
+                "broadcast": None,
+                "first_host": "192.168.1.5",
+                "last_host": "192.168.1.5",
+                "usable_hosts": 1,
+            },
+        ),
+    ],
+)
+def test_api_subnet_sukses(ip, prefix, expected):
+    response = client.get(
+        "/api/subnet",
+        params={"ip": ip, "prefix": prefix},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == expected
 
 
-def test_api_ip_salah():
-    r = client.get("/api/subnet", params={"ip": "999.1.1.1", "prefix": 24})
-    assert r.status_code == 422
+@pytest.mark.parametrize(
+    ("params",),
+    [
+        ({"ip": "256.1.1.1", "prefix": 24},),
+        ({"ip": "192.168.01.1", "prefix": 24},),
+        ({"ip": " 192.168.1.1 ", "prefix": 24},),
+        ({"ip": "10.0.0.1", "prefix": 33},),
+        ({"ip": "10.0.0.1", "prefix": -1},),
+        ({"ip": "10.0.0.1", "prefix": "abc"},),
+        ({"ip": "10.0.0.1"},),
+        ({"prefix": 24},),
+        ({},),
+    ],
+)
+def test_api_input_tidak_valid_mengembalikan_400_detail(params):
+    response = client.get("/api/subnet", params=params)
+
+    assert response.status_code == 400
+    assert isinstance(response.json().get("detail"), str)
+    assert response.json()["detail"]
 
 
-def test_api_prefix_di_luar_range():
-    r = client.get("/api/subnet", params={"ip": "10.0.0.1", "prefix": 33})
-    assert r.status_code == 422
+def test_api_root_mengembalikan_halaman_html():
+    response = client.get("/")
 
-
-def test_api_prefix_bukan_angka():
-    r = client.get("/api/subnet", params={"ip": "10.0.0.1", "prefix": "abc"})
-    assert r.status_code == 422
-
-
-def test_api_parameter_hilang():
-    assert client.get("/api/subnet").status_code == 422
+    assert response.status_code == 200
+    assert "text/html" in response.headers["content-type"]
+    assert "Kalkulator Subnet" in response.text
