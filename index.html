@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f7fb">
+  <title>Kalkulator Subnet &amp; VLSM</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #172033;
+      background: #f5f7fb;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+      --blue: #2563eb;
+      --blue-dark: #1d4ed8;
+      --muted: #64748b;
+      --line: #e2e8f0;
+      --surface: #ffffff;
+      --soft: #f8fafc;
+      --danger: #b42318;
+      --danger-bg: #fef3f2;
+      --success: #067647;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    .page {
+      width: min(100% - 32px, 960px);
+      margin: 0 auto;
+      padding: 48px 0 64px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 32px;
+    }
+
+    .brand-mark {
+      display: grid;
+      width: 44px;
+      height: 44px;
+      place-items: center;
+      border-radius: 14px;
+      background: #eaf1ff;
+      color: var(--blue);
+      font-size: 20px;
+      font-weight: 800;
+    }
+
+    h1,
+    h2,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      margin-bottom: 4px;
+      font-size: clamp(24px, 4vw, 32px);
+      letter-spacing: -0.035em;
+    }
+
+    .subtitle,
+    .hint,
+    .muted {
+      color: var(--muted);
+    }
+
+    .subtitle {
+      margin-bottom: 0;
+      font-size: 15px;
+    }
+
+    .panel {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--surface);
+      box-shadow: 0 12px 32px rgb(15 23 42 / 5%);
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      padding: 8px;
+      border-bottom: 1px solid var(--line);
+      background: var(--soft);
+    }
+
+    .tab {
+      min-height: 42px;
+      padding: 0 18px;
+      border: 0;
+      border-radius: 11px;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 650;
+      cursor: pointer;
+    }
+
+    .tab[aria-selected="true"] {
+      background: var(--surface);
+      color: var(--blue-dark);
+      box-shadow: 0 1px 3px rgb(15 23 42 / 12%);
+    }
+
+    .content {
+      padding: clamp(20px, 5vw, 36px);
+    }
+
+    .section-heading {
+      margin-bottom: 6px;
+      font-size: 20px;
+      letter-spacing: -0.02em;
+    }
+
+    .hint {
+      margin-bottom: 24px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 150px;
+      gap: 16px;
+      align-items: end;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+    }
+
+    label,
+    .field-label {
+      font-size: 14px;
+      font-weight: 650;
+    }
+
+    input {
+      width: 100%;
+      min-height: 46px;
+      padding: 10px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      background: var(--surface);
+      color: #172033;
+    }
+
+    input::placeholder {
+      color: #94a3b8;
+    }
+
+    input:focus-visible,
+    button:focus-visible {
+      outline: 3px solid rgb(37 99 235 / 25%);
+      outline-offset: 2px;
+    }
+
+    .primary {
+      min-height: 46px;
+      padding: 0 18px;
+      border: 0;
+      border-radius: 10px;
+      background: var(--blue);
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .primary:hover {
+      background: var(--blue-dark);
+    }
+
+    .empty-state {
+      display: grid;
+      min-height: 150px;
+      margin-top: 28px;
+      padding: 24px;
+      place-items: center;
+      border: 1px dashed #cbd5e1;
+      border-radius: 13px;
+      background: var(--soft);
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .empty-state p {
+      max-width: 390px;
+      margin-bottom: 0;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .error-state {
+      margin-top: 16px;
+      padding: 12px 14px;
+      border: 1px solid #fecdca;
+      border-radius: 10px;
+      background: var(--danger-bg);
+      color: var(--danger);
+      font-size: 14px;
+    }
+
+    .success-preview {
+      margin-top: 24px;
+      padding-top: 22px;
+      border-top: 1px solid var(--line);
+    }
+
+    .success-preview h3 {
+      margin: 0 0 14px;
+      color: var(--success);
+      font-size: 14px;
+    }
+
+    .results {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .result {
+      min-width: 0;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--surface);
+    }
+
+    .result dt {
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .result dd {
+      overflow-wrap: anywhere;
+      margin: 0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .vlsm-fields {
+      display: grid;
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .host-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .secondary {
+      min-height: 42px;
+      padding: 0 14px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      background: var(--surface);
+      color: #334155;
+      font-weight: 650;
+      cursor: pointer;
+    }
+
+    .vlsm-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      margin-top: 24px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    th,
+    td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      font-size: 13px;
+    }
+
+    th {
+      background: var(--soft);
+      color: #475569;
+      font-weight: 700;
+    }
+
+    td.code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    @media (max-width: 640px) {
+      .page {
+        width: min(100% - 24px, 960px);
+        padding-top: 28px;
+      }
+
+      .brand {
+        margin-bottom: 22px;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .results {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .primary {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 390px) {
+      .results {
+        grid-template-columns: 1fr;
+      }
+
+      .tab {
+        flex: 1;
+        padding: 0 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="brand">
+      <div class="brand-mark" aria-hidden="true">IP</div>
+      <div>
+        <h1>Kalkulator Subnet &amp; VLSM</h1>
+        <p class="subtitle">Bantu periksa perhitungan jaringan IPv4 dengan jelas.</p>
+      </div>
+    </header>
+
+    <section class="panel" aria-label="Kalkulator jaringan">
+      <nav class="tabs" role="tablist" aria-label="Mode kalkulator">
+        <button class="tab" id="tab-subnet" type="button" role="tab" aria-selected="true" aria-controls="panel-subnet">Subnet</button>
+        <button class="tab" id="tab-vlsm" type="button" role="tab" aria-selected="false" aria-controls="panel-vlsm">VLSM</button>
+      </nav>
+
+      <section class="content" id="panel-subnet" role="tabpanel" aria-labelledby="tab-subnet">
+        <h2 class="section-heading">Hitung subnet IPv4</h2>
+        <p class="hint">Masukkan alamat IPv4 dan prefix untuk melihat network, broadcast, rentang host, dan kapasitas subnet.</p>
+
+        <form class="form-grid">
+          <div class="field">
+            <label for="ip-address">Alamat IPv4</label>
+            <input id="ip-address" name="ip" type="text" inputmode="decimal" placeholder="Contoh: 172.16.5.130" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="prefix">Prefix</label>
+            <input id="prefix" name="prefix" type="number" min="0" max="32" step="1" placeholder="0–32">
+          </div>
+          <button class="primary" type="button">Hitung subnet</button>
+        </form>
+
+        <div class="empty-state" role="status">
+          <p>Hasil perhitungan akan muncul di sini setelah alamat IPv4 dan prefix diisi.</p>
+        </div>
+
+        <div class="error-state" role="alert" hidden>Contoh pesan error: periksa kembali alamat IPv4 dan prefix.</div>
+
+        <section class="success-preview" aria-label="Contoh tampilan hasil" hidden>
+          <h3>Contoh hasil berhasil</h3>
+          <dl class="results">
+            <div class="result"><dt>Subnet mask</dt><dd>255.255.255.128</dd></div>
+            <div class="result"><dt>Network</dt><dd>172.16.5.128</dd></div>
+            <div class="result"><dt>Broadcast</dt><dd>172.16.5.255</dd></div>
+            <div class="result"><dt>First host</dt><dd>172.16.5.129</dd></div>
+            <div class="result"><dt>Last host</dt><dd>172.16.5.254</dd></div>
+            <div class="result"><dt>Host usable</dt><dd>126</dd></div>
+          </dl>
+        </section>
+      </section>
+
+      <section class="content" id="panel-vlsm" role="tabpanel" aria-labelledby="tab-vlsm" hidden>
+        <h2 class="section-heading">Bagi jaringan dengan VLSM</h2>
+        <p class="hint">Masukkan network induk dan jumlah host yang dibutuhkan setiap subnet.</p>
+
+        <form>
+          <div class="field">
+            <label for="network-cidr">Network CIDR</label>
+            <input id="network-cidr" name="network" type="text" placeholder="Contoh: 192.168.1.0/24" autocomplete="off">
+          </div>
+
+          <div class="vlsm-fields">
+            <span class="field-label">Kebutuhan host</span>
+            <div class="host-row">
+              <div class="field">
+                <label for="host-1">Subnet 1</label>
+                <input id="host-1" name="kebutuhan_host[]" type="number" min="1" step="1" placeholder="Contoh: 100">
+              </div>
+              <button class="secondary" type="button" aria-label="Hapus kebutuhan subnet 1">Hapus</button>
+            </div>
+            <button class="secondary" type="button">+ Tambah kebutuhan</button>
+          </div>
+
+          <div class="vlsm-actions">
+            <button class="primary" type="button">Alokasikan VLSM</button>
+          </div>
+        </form>
+
+        <div class="empty-state" role="status">
+          <p>Tabel alokasi subnet akan muncul di sini setelah network dan kebutuhan host diisi.</p>
+        </div>
+
+        <div class="table-wrap" hidden>
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Kebutuhan</th>
+                <th scope="col">Network CIDR</th>
+                <th scope="col">Mask</th>
+                <th scope="col">Broadcast</th>
+                <th scope="col">Rentang host</th>
+                <th scope="col">Host usable</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>100</td>
+                <td class="code">192.168.1.0/25</td>
+                <td class="code">255.255.255.128</td>
+                <td class="code">192.168.1.127</td>
+                <td class="code">192.168.1.1–192.168.1.126</td>
+                <td>126</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="error-state" role="alert" hidden>Contoh pesan error: kebutuhan host tidak muat dalam network yang diberikan.</div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const tabs = document.querySelectorAll('[role="tab"]');
+    const panels = document.querySelectorAll('[role="tabpanel"]');
+
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        tabs.forEach((item) => item.setAttribute("aria-selected", String(item === tab)));
+        panels.forEach((panel) => {
+          panel.hidden = panel.id !== tab.getAttribute("aria-controls");
+        });
+      });
+    });
+  </script>
+</body>
+</html>
