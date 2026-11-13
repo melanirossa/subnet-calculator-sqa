@@ -383,33 +383,32 @@
         <h2 class="section-heading">Hitung subnet IPv4</h2>
         <p class="hint">Masukkan alamat IPv4 dan prefix untuk melihat network, broadcast, rentang host, dan kapasitas subnet.</p>
 
-        <form class="form-grid">
+        <form class="form-grid" id="subnet-form">
           <div class="field">
             <label for="ip-address">Alamat IPv4</label>
-            <input id="ip-address" name="ip" type="text" inputmode="decimal" placeholder="Contoh: 172.16.5.130" autocomplete="off">
+            <input id="ip-address" name="ip" type="text" inputmode="decimal" placeholder="Contoh: 172.16.5.130" autocomplete="off" aria-describedby="subnet-error">
           </div>
           <div class="field">
             <label for="prefix">Prefix</label>
-            <input id="prefix" name="prefix" type="number" min="0" max="32" step="1" placeholder="0–32">
+            <input id="prefix" name="prefix" type="number" min="0" max="32" step="1" placeholder="0–32" aria-describedby="subnet-error">
           </div>
-          <button class="primary" type="button">Hitung subnet</button>
+          <button class="primary" type="submit">Hitung subnet</button>
         </form>
 
-        <div class="empty-state" role="status">
+        <div class="empty-state" id="subnet-empty" role="status">
           <p>Hasil perhitungan akan muncul di sini setelah alamat IPv4 dan prefix diisi.</p>
         </div>
 
-        <div class="error-state" role="alert" hidden>Contoh pesan error: periksa kembali alamat IPv4 dan prefix.</div>
+        <div class="error-state" id="subnet-error" role="alert" hidden></div>
 
-        <section class="success-preview" aria-label="Contoh tampilan hasil" hidden>
-          <h3>Contoh hasil berhasil</h3>
+        <section class="success-preview" id="subnet-result" aria-label="Hasil perhitungan subnet" hidden>
           <dl class="results">
-            <div class="result"><dt>Subnet mask</dt><dd>255.255.255.128</dd></div>
-            <div class="result"><dt>Network</dt><dd>172.16.5.128</dd></div>
-            <div class="result"><dt>Broadcast</dt><dd>172.16.5.255</dd></div>
-            <div class="result"><dt>First host</dt><dd>172.16.5.129</dd></div>
-            <div class="result"><dt>Last host</dt><dd>172.16.5.254</dd></div>
-            <div class="result"><dt>Host usable</dt><dd>126</dd></div>
+            <div class="result"><dt>Subnet mask</dt><dd id="result-mask"></dd></div>
+            <div class="result"><dt>Network</dt><dd id="result-network"></dd></div>
+            <div class="result"><dt>Broadcast</dt><dd id="result-broadcast"></dd></div>
+            <div class="result"><dt>First host</dt><dd id="result-first-host"></dd></div>
+            <div class="result"><dt>Last host</dt><dd id="result-last-host"></dd></div>
+            <div class="result"><dt>Host usable</dt><dd id="result-usable-hosts"></dd></div>
           </dl>
         </section>
       </section>
@@ -478,6 +477,18 @@
   <script>
     const tabs = document.querySelectorAll('[role="tab"]');
     const panels = document.querySelectorAll('[role="tabpanel"]');
+    const subnetForm = document.querySelector("#subnet-form");
+    const subnetEmpty = document.querySelector("#subnet-empty");
+    const subnetError = document.querySelector("#subnet-error");
+    const subnetResult = document.querySelector("#subnet-result");
+    const resultFields = {
+      mask: document.querySelector("#result-mask"),
+      network: document.querySelector("#result-network"),
+      broadcast: document.querySelector("#result-broadcast"),
+      first_host: document.querySelector("#result-first-host"),
+      last_host: document.querySelector("#result-last-host"),
+      usable_hosts: document.querySelector("#result-usable-hosts"),
+    };
 
     tabs.forEach((tab) => {
       tab.addEventListener("click", () => {
@@ -486,6 +497,38 @@
           panel.hidden = panel.id !== tab.getAttribute("aria-controls");
         });
       });
+    });
+
+    subnetForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      subnetEmpty.hidden = true;
+      subnetError.hidden = true;
+      subnetResult.hidden = true;
+
+      const formData = new FormData(subnetForm);
+      const query = new URLSearchParams({
+        ip: formData.get("ip"),
+        prefix: formData.get("prefix"),
+      });
+
+      try {
+        const response = await fetch(`/api/subnet?${query}`);
+        const body = await response.json();
+
+        if (!response.ok) {
+          throw new Error(body.detail || "Perhitungan subnet gagal.");
+        }
+
+        Object.entries(resultFields).forEach(([key, element]) => {
+          element.textContent = body[key] === null ? "Tidak ada" : String(body[key]);
+        });
+        subnetResult.hidden = false;
+      } catch (error) {
+        subnetError.textContent = error instanceof Error
+          ? error.message
+          : "Tidak dapat terhubung ke server. Coba lagi.";
+        subnetError.hidden = false;
+      }
     });
   </script>
 </body>
