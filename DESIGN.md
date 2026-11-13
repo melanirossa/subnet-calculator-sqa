@@ -54,4 +54,4 @@ Antarmuka ditujukan untuk guru dan siswa SMK TKJ. Prioritasnya adalah label yang
 
 ## Batas Implementasi Tahap Desain
 
-`index.html` adalah prototipe struktur dan gaya. Tombol hitung belum memanggil API dan belum menjalankan kalkulasi. Penghubungan ke endpoint dilakukan pada tahap implementasi.
+Mode Subnet pada `index.html` sudah memanggil `GET /api/subnet` dan menampilkan hasil atau pesan error dari API. Mode VLSM masih berupa rancangan visual; alokasi, kontrol tambah/hapus, dan pengiriman ke API belum diimplementasikan.
