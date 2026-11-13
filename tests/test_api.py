@@ -85,3 +85,42 @@ def test_api_root_mengembalikan_halaman_html():
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
     assert "Kalkulator Subnet" in response.text
+
+
+def test_api_vlsm_sukses():
+    response = client.post(
+        "/api/vlsm",
+        json={
+            "network": "192.168.1.0/24",
+            "kebutuhan_host": [100, 50, 20, 2],
+        },
+    )
+
+    assert response.status_code == 200
+    hasil = response.json()
+    assert [blok["network_cidr"] for blok in hasil] == [
+        "192.168.1.0/25",
+        "192.168.1.128/26",
+        "192.168.1.192/27",
+        "192.168.1.224/30",
+    ]
+    assert [blok["usable_hosts"] for blok in hasil] == [126, 62, 30, 2]
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        {"network": "192.168.1.5/24", "kebutuhan_host": [10]},
+        {"network": "192.168.1.0/24", "kebutuhan_host": []},
+        {"network": "192.168.1.0/24", "kebutuhan_host": [0]},
+        {"network": "192.168.1.0/24", "kebutuhan_host": [200, 100]},
+        {"network": "192.168.1.0/24", "kebutuhan_host": [True]},
+        {},
+    ],
+)
+def test_api_vlsm_input_tidak_valid_mengembalikan_400_detail(body):
+    response = client.post("/api/vlsm", json=body)
+
+    assert response.status_code == 400
+    assert isinstance(response.json().get("detail"), str)
+    assert response.json()["detail"]

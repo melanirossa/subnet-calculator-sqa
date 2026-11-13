@@ -26,3 +26,8 @@ def subnet(ip: str | None = Query(None), prefix: str | None = Query(None)):
 @app.get("/")
 def home():
     return FileResponse(INDEX_HTML, media_type="text/html")
+
+
+@app.post("/api/vlsm")
+def vlsm(body: dict[str, object]):
+    raise HTTPException(status_code=501, detail="VLSM belum diimplementasikan.")
