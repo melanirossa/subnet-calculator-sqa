@@ -52,6 +52,6 @@ Antarmuka ditujukan untuk guru dan siswa SMK TKJ. Prioritasnya adalah label yang
 - Status error dan hasil dapat dikenali tanpa hanya mengandalkan warna.
 - Tabel memiliki header kolom yang jelas; halaman mendukung pembesaran teks.
 
-## Batas Implementasi Tahap Desain
+## Implementasi
 
-Mode Subnet pada `index.html` sudah memanggil `GET /api/subnet` dan menampilkan hasil atau pesan error dari API. Mode VLSM masih berupa rancangan visual; alokasi, kontrol tambah/hapus, dan pengiriman ke API belum diimplementasikan.
+Mode Subnet pada `index.html` memanggil `GET /api/subnet`; mode VLSM menyediakan kontrol tambah/hapus kebutuhan, mengirim alokasi ke `POST /api/vlsm`, dan menampilkan hasil API sebagai tabel. Kedua mode menampilkan pesan error dari API pada halaman.

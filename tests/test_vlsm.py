@@ -63,6 +63,8 @@ def test_kebutuhan_sama_besar_mempertahankan_urutan_input():
     ("network_cidr", "kebutuhan_host"),
     [
         ("192.168.1.5/24", [10]),
+        ("256.168.1.0/24", [10]),
+        ("192.168.01.0/24", [10]),
         ("192.168.1.0/33", [10]),
         ("abc", [10]),
     ],
@@ -81,3 +83,12 @@ def test_kebutuhan_host_tidak_valid(kebutuhan_host):
 def test_alokasi_ditolak_jika_seluruh_kebutuhan_tidak_muat():
     with pytest.raises(ValueError):
         alokasi_vlsm("192.168.1.0/24", [200, 100])
+
+
+def test_alokasi_dengan_kapasitas_tepat_mengisi_pool_tanpa_overlap():
+    hasil = alokasi_vlsm("192.168.1.0/24", [126, 126])
+
+    assert [blok["network_cidr"] for blok in hasil] == [
+        "192.168.1.0/25",
+        "192.168.1.128/25",
+    ]

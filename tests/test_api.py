@@ -124,3 +124,19 @@ def test_api_vlsm_input_tidak_valid_mengembalikan_400_detail(body):
     assert response.status_code == 400
     assert isinstance(response.json().get("detail"), str)
     assert response.json()["detail"]
+
+
+@pytest.mark.parametrize(
+    "content",
+    ["{", "[]"],
+)
+def test_api_vlsm_body_bukan_objek_json_valid_mengembalikan_400_detail(content):
+    response = client.post(
+        "/api/vlsm",
+        content=content,
+        headers={"Content-Type": "application/json"},
+    )
+
+    assert response.status_code == 400
+    assert isinstance(response.json().get("detail"), str)
+    assert response.json()["detail"]

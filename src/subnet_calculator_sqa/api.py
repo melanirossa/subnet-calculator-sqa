@@ -1,10 +1,12 @@
+import json
 import re
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import FileResponse
 
 from subnet_calculator_sqa.subnet import SubnetError, calculate
+from subnet_calculator_sqa.vlsm import alokasi_vlsm
 
 app = FastAPI(title="Subnet Calculator")
 INDEX_HTML = Path(__file__).resolve().parents[2] / "index.html"
@@ -29,5 +31,24 @@ def home():
 
 
 @app.post("/api/vlsm")
-def vlsm(body: dict[str, object]):
-    raise HTTPException(status_code=501, detail="VLSM belum diimplementasikan.")
+async def vlsm(request: Request):
+    try:
+        body = await request.json()
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        raise HTTPException(status_code=400, detail="Body harus berupa JSON yang valid.") from exc
+
+    if not isinstance(body, dict):
+        raise HTTPException(status_code=400, detail="Body harus berupa objek JSON.")
+
+    network = body.get("network")
+    kebutuhan_host = body.get("kebutuhan_host")
+    if not isinstance(network, str) or not isinstance(kebutuhan_host, list):
+        raise HTTPException(
+            status_code=400,
+            detail="Field network dan kebutuhan_host harus diisi dengan tipe yang benar.",
+        )
+
+    try:
+        return alokasi_vlsm(network, kebutuhan_host)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
