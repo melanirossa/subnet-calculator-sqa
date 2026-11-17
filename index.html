@@ -1,638 +1,324 @@
-<!doctype html>
-<html lang="id">
+<!DOCTYPE html>
+<html lang="id" class="light">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f5f7fb">
-  <title>Kalkulator Subnet &amp; VLSM</title>
-  <style>
-    :root {
-      color-scheme: light;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      color: #172033;
-      background: #f5f7fb;
-      font-synthesis: none;
-      text-rendering: optimizeLegibility;
-      --blue: #2563eb;
-      --blue-dark: #1d4ed8;
-      --muted: #64748b;
-      --line: #e2e8f0;
-      --surface: #ffffff;
-      --soft: #f8fafc;
-      --danger: #b42318;
-      --danger-bg: #fef3f2;
-      --success: #067647;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      min-width: 320px;
-    }
-
-    button,
-    input {
-      font: inherit;
-    }
-
-    .page {
-      width: min(100% - 32px, 960px);
-      margin: 0 auto;
-      padding: 48px 0 64px;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      margin-bottom: 32px;
-    }
-
-    .brand-mark {
-      display: grid;
-      width: 44px;
-      height: 44px;
-      place-items: center;
-      border-radius: 14px;
-      background: #eaf1ff;
-      color: var(--blue);
-      font-size: 20px;
-      font-weight: 800;
-    }
-
-    h1,
-    h2,
-    p {
-      margin-top: 0;
-    }
-
-    h1 {
-      margin-bottom: 4px;
-      font-size: clamp(24px, 4vw, 32px);
-      letter-spacing: -0.035em;
-    }
-
-    .subtitle,
-    .hint,
-    .muted {
-      color: var(--muted);
-    }
-
-    .subtitle {
-      margin-bottom: 0;
-      font-size: 15px;
-    }
-
-    .panel {
-      overflow: hidden;
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      background: var(--surface);
-      box-shadow: 0 12px 32px rgb(15 23 42 / 5%);
-    }
-
-    .tabs {
-      display: flex;
-      gap: 8px;
-      padding: 8px;
-      border-bottom: 1px solid var(--line);
-      background: var(--soft);
-    }
-
-    .tab {
-      min-height: 42px;
-      padding: 0 18px;
-      border: 0;
-      border-radius: 11px;
-      background: transparent;
-      color: var(--muted);
-      font-weight: 650;
-      cursor: pointer;
-    }
-
-    .tab[aria-selected="true"] {
-      background: var(--surface);
-      color: var(--blue-dark);
-      box-shadow: 0 1px 3px rgb(15 23 42 / 12%);
-    }
-
-    .content {
-      padding: clamp(20px, 5vw, 36px);
-    }
-
-    .section-heading {
-      margin-bottom: 6px;
-      font-size: 20px;
-      letter-spacing: -0.02em;
-    }
-
-    .hint {
-      margin-bottom: 24px;
-      font-size: 14px;
-      line-height: 1.6;
-    }
-
-    .form-grid {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 150px;
-      gap: 16px;
-      align-items: end;
-    }
-
-    .field {
-      display: grid;
-      gap: 8px;
-    }
-
-    label,
-    .field-label {
-      font-size: 14px;
-      font-weight: 650;
-    }
-
-    input {
-      width: 100%;
-      min-height: 46px;
-      padding: 10px 12px;
-      border: 1px solid #cbd5e1;
-      border-radius: 10px;
-      background: var(--surface);
-      color: #172033;
-    }
-
-    input::placeholder {
-      color: #94a3b8;
-    }
-
-    input:focus-visible,
-    button:focus-visible {
-      outline: 3px solid rgb(37 99 235 / 25%);
-      outline-offset: 2px;
-    }
-
-    .primary {
-      min-height: 46px;
-      padding: 0 18px;
-      border: 0;
-      border-radius: 10px;
-      background: var(--blue);
-      color: #fff;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    .primary:hover {
-      background: var(--blue-dark);
-    }
-
-    .empty-state {
-      display: grid;
-      min-height: 150px;
-      margin-top: 28px;
-      padding: 24px;
-      place-items: center;
-      border: 1px dashed #cbd5e1;
-      border-radius: 13px;
-      background: var(--soft);
-      color: var(--muted);
-      text-align: center;
-    }
-
-    .empty-state p {
-      max-width: 390px;
-      margin-bottom: 0;
-      font-size: 14px;
-      line-height: 1.6;
-    }
-
-    .error-state {
-      margin-top: 16px;
-      padding: 12px 14px;
-      border: 1px solid #fecdca;
-      border-radius: 10px;
-      background: var(--danger-bg);
-      color: var(--danger);
-      font-size: 14px;
-    }
-
-    .success-preview {
-      margin-top: 24px;
-      padding-top: 22px;
-      border-top: 1px solid var(--line);
-    }
-
-    .success-preview h3 {
-      margin: 0 0 14px;
-      color: var(--success);
-      font-size: 14px;
-    }
-
-    .results {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
-    }
-
-    .result {
-      min-width: 0;
-      padding: 14px;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      background: var(--surface);
-    }
-
-    .result dt {
-      margin-bottom: 8px;
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    .result dd {
-      overflow-wrap: anywhere;
-      margin: 0;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 14px;
-      font-weight: 700;
-    }
-
-    .vlsm-fields {
-      display: grid;
-      gap: 14px;
-      margin-top: 18px;
-    }
-
-    .host-row {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 10px;
-      align-items: end;
-    }
-
-    .secondary {
-      min-height: 42px;
-      padding: 0 14px;
-      border: 1px solid #cbd5e1;
-      border-radius: 10px;
-      background: var(--surface);
-      color: #334155;
-      font-weight: 650;
-      cursor: pointer;
-    }
-
-    .vlsm-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 18px;
-    }
-
-    .table-wrap {
-      overflow-x: auto;
-      margin-top: 24px;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      text-align: left;
-      white-space: nowrap;
-    }
-
-    th,
-    td {
-      padding: 12px 14px;
-      border-bottom: 1px solid var(--line);
-      font-size: 13px;
-    }
-
-    th {
-      background: var(--soft);
-      color: #475569;
-      font-weight: 700;
-    }
-
-    td.code {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    }
-
-    tbody tr:last-child td {
-      border-bottom: 0;
-    }
-
-    [hidden] {
-      display: none !important;
-    }
-
-    @media (max-width: 640px) {
-      .page {
-        width: min(100% - 24px, 960px);
-        padding-top: 28px;
-      }
-
-      .brand {
-        margin-bottom: 22px;
-      }
-
-      .form-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .results {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
-      .primary {
-        width: 100%;
-      }
-    }
-
-    @media (max-width: 390px) {
-      .results {
-        grid-template-columns: 1fr;
-      }
-
-      .tab {
-        flex: 1;
-        padding: 0 10px;
-      }
-    }
-  </style>
-</head>
-<body>
-  <main class="page">
-    <header class="brand">
-      <div class="brand-mark" aria-hidden="true">IP</div>
-      <div>
-        <h1>Kalkulator Subnet &amp; VLSM</h1>
-        <p class="subtitle">Bantu periksa perhitungan jaringan IPv4 dengan jelas.</p>
-      </div>
-    </header>
-
-    <section class="panel" aria-label="Kalkulator jaringan">
-      <nav class="tabs" role="tablist" aria-label="Mode kalkulator">
-        <button class="tab" id="tab-subnet" type="button" role="tab" aria-selected="true" aria-controls="panel-subnet">Subnet</button>
-        <button class="tab" id="tab-vlsm" type="button" role="tab" aria-selected="false" aria-controls="panel-vlsm">VLSM</button>
-      </nav>
-
-      <section class="content" id="panel-subnet" role="tabpanel" aria-labelledby="tab-subnet">
-        <h2 class="section-heading">Hitung subnet IPv4</h2>
-        <p class="hint">Masukkan alamat IPv4 dan prefix untuk melihat network, broadcast, rentang host, dan kapasitas subnet.</p>
-
-        <form class="form-grid" id="subnet-form">
-          <div class="field">
-            <label for="ip-address">Alamat IPv4</label>
-            <input id="ip-address" name="ip" type="text" inputmode="decimal" placeholder="Contoh: 172.16.5.130" autocomplete="off" aria-describedby="subnet-error">
-          </div>
-          <div class="field">
-            <label for="prefix">Prefix</label>
-            <input id="prefix" name="prefix" type="number" min="0" max="32" step="1" placeholder="0–32" aria-describedby="subnet-error">
-          </div>
-          <button class="primary" type="submit">Hitung subnet</button>
-        </form>
-
-        <div class="empty-state" id="subnet-empty" role="status">
-          <p>Hasil perhitungan akan muncul di sini setelah alamat IPv4 dan prefix diisi.</p>
-        </div>
-
-        <div class="error-state" id="subnet-error" role="alert" hidden></div>
-
-        <section class="success-preview" id="subnet-result" aria-label="Hasil perhitungan subnet" hidden>
-          <dl class="results">
-            <div class="result"><dt>Subnet mask</dt><dd id="result-mask"></dd></div>
-            <div class="result"><dt>Network</dt><dd id="result-network"></dd></div>
-            <div class="result"><dt>Broadcast</dt><dd id="result-broadcast"></dd></div>
-            <div class="result"><dt>First host</dt><dd id="result-first-host"></dd></div>
-            <div class="result"><dt>Last host</dt><dd id="result-last-host"></dd></div>
-            <div class="result"><dt>Host usable</dt><dd id="result-usable-hosts"></dd></div>
-          </dl>
-        </section>
-      </section>
-
-      <section class="content" id="panel-vlsm" role="tabpanel" aria-labelledby="tab-vlsm" hidden>
-        <h2 class="section-heading">Bagi jaringan dengan VLSM</h2>
-        <p class="hint">Masukkan network induk dan jumlah host yang dibutuhkan setiap subnet.</p>
-
-        <form id="vlsm-form">
-          <div class="field">
-            <label for="network-cidr">Network CIDR</label>
-            <input id="network-cidr" name="network" type="text" placeholder="Contoh: 192.168.1.0/24" autocomplete="off" aria-describedby="vlsm-error">
-          </div>
-
-          <div class="vlsm-fields">
-            <span class="field-label">Kebutuhan host</span>
-            <div id="host-rows">
-              <div class="host-row">
-                <div class="field">
-                  <label for="host-1">Subnet 1</label>
-                  <input id="host-1" name="kebutuhan_host[]" type="number" min="1" step="1" placeholder="Contoh: 100" aria-describedby="vlsm-error">
-                </div>
-                <button class="secondary" type="button" data-remove-host aria-label="Hapus kebutuhan subnet 1">Hapus</button>
-              </div>
-            </div>
-            <button class="secondary" id="add-host" type="button">+ Tambah kebutuhan</button>
-          </div>
-
-          <div class="vlsm-actions">
-            <button class="primary" type="submit">Alokasikan VLSM</button>
-          </div>
-        </form>
-
-        <div class="empty-state" id="vlsm-empty" role="status">
-          <p>Tabel alokasi subnet akan muncul di sini setelah network dan kebutuhan host diisi.</p>
-        </div>
-
-        <div class="error-state" id="vlsm-error" role="alert" hidden></div>
-
-        <div class="table-wrap" id="vlsm-result" hidden>
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">Kebutuhan</th>
-                <th scope="col">Network CIDR</th>
-                <th scope="col">Mask</th>
-                <th scope="col">Broadcast</th>
-                <th scope="col">Rentang host</th>
-                <th scope="col">Host usable</th>
-              </tr>
-            </thead>
-            <tbody id="vlsm-result-rows"></tbody>
-          </table>
-        </div>
-      </section>
-    </section>
-  </main>
-
-  <script>
-    const tabs = document.querySelectorAll('[role="tab"]');
-    const panels = document.querySelectorAll('[role="tabpanel"]');
-    const subnetForm = document.querySelector("#subnet-form");
-    const subnetEmpty = document.querySelector("#subnet-empty");
-    const subnetError = document.querySelector("#subnet-error");
-    const subnetResult = document.querySelector("#subnet-result");
-    const vlsmForm = document.querySelector("#vlsm-form");
-    const hostRows = document.querySelector("#host-rows");
-    const vlsmEmpty = document.querySelector("#vlsm-empty");
-    const vlsmError = document.querySelector("#vlsm-error");
-    const vlsmResult = document.querySelector("#vlsm-result");
-    const vlsmResultRows = document.querySelector("#vlsm-result-rows");
-    const resultFields = {
-      mask: document.querySelector("#result-mask"),
-      network: document.querySelector("#result-network"),
-      broadcast: document.querySelector("#result-broadcast"),
-      first_host: document.querySelector("#result-first-host"),
-      last_host: document.querySelector("#result-last-host"),
-      usable_hosts: document.querySelector("#result-usable-hosts"),
-    };
-    let nextHostRowNumber = 2;
-
-    function updateHostRemoveButtons() {
-      const disableRemove = hostRows.children.length === 1;
-      hostRows.querySelectorAll("[data-remove-host]").forEach((button) => {
-        button.disabled = disableRemove;
-      });
-    }
-
-    updateHostRemoveButtons();
-
-    tabs.forEach((tab) => {
-      tab.addEventListener("click", () => {
-        tabs.forEach((item) => item.setAttribute("aria-selected", String(item === tab)));
-        panels.forEach((panel) => {
-          panel.hidden = panel.id !== tab.getAttribute("aria-controls");
-        });
-      });
-    });
-
-    document.querySelector("#add-host").addEventListener("click", () => {
-      const rowNumber = nextHostRowNumber++;
-      const row = document.createElement("div");
-      row.className = "host-row";
-
-      const field = document.createElement("div");
-      field.className = "field";
-      const label = document.createElement("label");
-      label.htmlFor = `host-${rowNumber}`;
-      label.textContent = `Subnet ${rowNumber}`;
-      const input = document.createElement("input");
-      input.id = `host-${rowNumber}`;
-      input.name = "kebutuhan_host[]";
-      input.type = "number";
-      input.min = "1";
-      input.step = "1";
-      input.placeholder = "Jumlah host";
-      input.setAttribute("aria-describedby", "vlsm-error");
-      field.append(label, input);
-
-      const removeButton = document.createElement("button");
-      removeButton.className = "secondary";
-      removeButton.type = "button";
-      removeButton.dataset.removeHost = "";
-      removeButton.setAttribute("aria-label", `Hapus kebutuhan subnet ${rowNumber}`);
-      removeButton.textContent = "Hapus";
-
-      row.append(field, removeButton);
-      hostRows.append(row);
-      updateHostRemoveButtons();
-    });
-
-    hostRows.addEventListener("click", (event) => {
-      if (event.target instanceof Element && event.target.matches("[data-remove-host]")) {
-        event.target.closest(".host-row").remove();
-        updateHostRemoveButtons();
-      }
-    });
-
-    subnetForm.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      subnetEmpty.hidden = true;
-      subnetError.hidden = true;
-      subnetResult.hidden = true;
-
-      const formData = new FormData(subnetForm);
-      const query = new URLSearchParams({
-        ip: formData.get("ip"),
-        prefix: formData.get("prefix"),
-      });
-
-      try {
-        const response = await fetch(`/api/subnet?${query}`);
-        const body = await response.json();
-
-        if (!response.ok) {
-          throw new Error(body.detail || "Perhitungan subnet gagal.");
-        }
-
-        Object.entries(resultFields).forEach(([key, element]) => {
-          element.textContent = body[key] === null ? "Tidak ada" : String(body[key]);
-        });
-        subnetResult.hidden = false;
-      } catch (error) {
-        subnetError.textContent = error instanceof Error
-          ? error.message
-          : "Tidak dapat terhubung ke server. Coba lagi.";
-        subnetError.hidden = false;
-      }
-    });
-
-    vlsmForm.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      vlsmEmpty.hidden = true;
-      vlsmError.hidden = true;
-      vlsmResult.hidden = true;
-
-      const requirements = [...hostRows.querySelectorAll('input[name="kebutuhan_host[]"]')]
-        .map((input) => input.value.trim() === "" ? null : Number(input.value));
-
-      try {
-        const response = await fetch("/api/vlsm", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            network: vlsmForm.elements.network.value,
-            kebutuhan_host: requirements,
-          }),
-        });
-        const body = await response.json();
-
-        if (!response.ok) {
-          throw new Error(body.detail || "Alokasi VLSM gagal.");
-        }
-
-        vlsmResultRows.replaceChildren();
-        body.forEach((block) => {
-          const row = document.createElement("tr");
-          const values = [
-            block.kebutuhan,
-            block.network_cidr,
-            block.mask,
-            block.broadcast === null ? "Tidak ada" : block.broadcast,
-            `${block.first_host}–${block.last_host}`,
-            block.usable_hosts,
-          ];
-
-          values.forEach((value, index) => {
-            const cell = document.createElement("td");
-            cell.textContent = String(value);
-            if ([1, 2, 3, 4].includes(index)) {
-              cell.className = "code";
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalkulator Subnet IPv4</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
+                    }
+                }
             }
-            row.append(cell);
-          });
-          vlsmResultRows.append(row);
+        }
+    </script>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 min-h-screen transition-colors duration-200 p-4 md:p-8">
+
+    <div class="max-w-3xl mx-auto">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-bold text-indigo-600 dark:text-indigo-400">Kalkulator Subnet IPv4</h1>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Hitung Network, Broadcast, Range Host, dan Subnet Mask secara instan</p>
+            </div>
+            <button id="themeToggle" class="p-2.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm hover:bg-slate-100 dark:hover:bg-slate-700 transition" title="Ganti Tema">
+                <span id="themeIcon">🌙</span>
+            </button>
+        </div>
+
+        <!-- Card Input -->
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Input IP -->
+                <div class="md:col-span-2">
+                    <label for="ipInput" class="block text-sm font-medium mb-1.5">Alamat IPv4 (bisa langsung sertakan /prefix)</label>
+                    <input type="text" id="ipInput" value="192.168.1.10" placeholder="Contoh: 192.168.1.10 atau 10.0.0.5/26"
+                        class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 font-mono text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+                    <p id="errorMsg" class="text-red-500 text-xs mt-1.5 hidden">Format alamat IPv4 tidak valid.</p>
+                </div>
+
+                <!-- Dropdown Prefix -->
+                <div>
+                    <label for="cidrSelect" class="block text-sm font-medium mb-1.5">Prefix (CIDR)</label>
+                    <select id="cidrSelect" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 font-mono text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+                    </select>
+                </div>
+            </div>
+
+            <!-- Slider CIDR -->
+            <div class="mt-5">
+                <div class="flex justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
+                    <span>/0 (Semua IP)</span>
+                    <span id="cidrLabel" class="font-semibold text-indigo-600 dark:text-indigo-400">Prefix: /24</span>
+                    <span>/32 (Single Host)</span>
+                </div>
+                <input type="range" id="cidrSlider" min="0" max="32" value="24" class="w-full accent-indigo-600 cursor-pointer">
+            </div>
+
+            <!-- Opsi Biner -->
+            <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2">
+                <label class="inline-flex items-center cursor-pointer text-sm">
+                    <input type="checkbox" id="toggleBinary" class="rounded text-indigo-600 focus:ring-indigo-500 mr-2">
+                    <span>Tampilkan representasi Biner 32-bit</span>
+                </label>
+                <button id="copyAllBtn" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition">
+                    📋 Salin Semua Hasil
+                </button>
+            </div>
+        </div>
+
+        <!-- Hasil Perhitungan -->
+        <div id="resultContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Network Address -->
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <div class="flex justify-between items-start">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Network Address</span>
+                    <button onclick="copyText('networkAddr')" class="text-slate-400 hover:text-indigo-500 text-xs">Salin</button>
+                </div>
+                <div id="networkAddr" class="text-xl font-mono font-bold mt-1 text-indigo-600 dark:text-indigo-400">-</div>
+                <div id="networkBin" class="binary-row hidden text-xs font-mono text-slate-400 mt-1.5 break-all">-</div>
+            </div>
+
+            <!-- Broadcast Address -->
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <div class="flex justify-between items-start">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Broadcast Address</span>
+                    <button onclick="copyText('broadcastAddr')" class="text-slate-400 hover:text-indigo-500 text-xs">Salin</button>
+                </div>
+                <div id="broadcastAddr" class="text-xl font-mono font-bold mt-1 text-rose-600 dark:text-rose-400">-</div>
+                <div id="broadcastBin" class="binary-row hidden text-xs font-mono text-slate-400 mt-1.5 break-all">-</div>
+            </div>
+
+            <!-- Range Host -->
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm md:col-span-2">
+                <div class="flex justify-between items-start">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Range Host yang Dapat Digunakan (Usable IP)</span>
+                    <button onclick="copyText('hostRange')" class="text-slate-400 hover:text-indigo-500 text-xs">Salin</button>
+                </div>
+                <div id="hostRange" class="text-lg md:text-xl font-mono font-bold mt-1 text-emerald-600 dark:text-emerald-400">-</div>
+                <p id="specialNote" class="text-xs text-amber-600 dark:text-amber-400 mt-1 hidden"></p>
+            </div>
+
+            <!-- Jumlah Host -->
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Jumlah Host Aktif</span>
+                <div id="usableHosts" class="text-xl font-mono font-bold mt-1">-</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">Total Alamat IP: <span id="totalIps" class="font-mono font-semibold">-</span></div>
+            </div>
+
+            <!-- Subnet Mask & Wildcard -->
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <div class="flex justify-between items-start">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Subnet Mask</span>
+                    <button onclick="copyText('subnetMask')" class="text-slate-400 hover:text-indigo-500 text-xs">Salin</button>
+                </div>
+                <div id="subnetMask" class="text-xl font-mono font-bold mt-1">-</div>
+                <div id="maskBin" class="binary-row hidden text-xs font-mono text-slate-400 mt-1.5 break-all">-</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400 mt-1.5">Wildcard: <span id="wildcardMask" class="font-mono font-semibold">-</span> • <span id="ipClass" class="font-semibold text-indigo-500">-</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifikasi -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-800 text-white text-sm px-4 py-2.5 rounded-xl shadow-lg opacity-0 pointer-events-none transition-opacity duration-200">
+        Berhasil disalin!
+    </div>
+
+    <script>
+        const ipInput = document.getElementById('ipInput');
+        const cidrSelect = document.getElementById('cidrSelect');
+        const cidrSlider = document.getElementById('cidrSlider');
+        const cidrLabel = document.getElementById('cidrLabel');
+        const errorMsg = document.getElementById('errorMsg');
+        const toggleBinary = document.getElementById('toggleBinary');
+
+        // Isi opsi dropdown /0 - /32
+        for (let i = 0; i <= 32; i++) {
+            const opt = document.createElement('option');
+            opt.value = i;
+            opt.textContent = `/${i}`;
+            if (i === 24) opt.selected = true;
+            cidrSelect.appendChild(opt);
+        }
+
+        // Konversi IP string ke integer 32-bit unsigned
+        function ipToInt(ip) {
+            return ip.split('.').reduce((acc, octet) => ((acc << 8) + parseInt(octet, 10)) >>> 0, 0);
+        }
+
+        // Konversi integer 32-bit ke IP string
+        function intToIp(int) {
+            return [
+                (int >>> 24) & 255,
+                (int >>> 16) & 255,
+                (int >>> 8) & 255,
+                int & 255
+            ].join('.');
+        }
+
+        // Konversi integer 32-bit ke format biner bertitik
+        function intToBinary(int) {
+            return [
+                ((int >>> 24) & 255).toString(2).padStart(8, '0'),
+                ((int >>> 16) & 255).toString(2).padStart(8, '0'),
+                ((int >>> 8) & 255).toString(2).padStart(8, '0'),
+                (int & 255).toString(2).padStart(8, '0')
+            ].join('.');
+        }
+
+        // Validasi format IPv4
+        function isValidIp(ip) {
+            const parts = ip.split('.');
+            if (parts.length !== 4) return false;
+            return parts.every(part => {
+                if (!/^\d+$/.test(part)) return false;
+                if (part.length > 1 && part.startsWith('0')) return false;
+                const num = Number(part);
+                return num >= 0 && num <= 255;
+            });
+        }
+
+        // Deteksi Kelas IP
+        function getIpClass(firstOctet) {
+            if (firstOctet <= 127) return 'Kelas A';
+            if (firstOctet <= 191) return 'Kelas B';
+            if (firstOctet <= 223) return 'Kelas C';
+            if (firstOctet <= 239) return 'Kelas D (Multicast)';
+            return 'Kelas E (Eksperimental)';
+        }
+
+        function calculate() {
+            let raw = ipInput.value.trim();
+
+            // Cek jika user menempelkan format IP/CIDR sekaligus (misal 192.168.1.5/27)
+            if (raw.includes('/')) {
+                const [ipPart, prefixPart] = raw.split('/');
+                const parsedPrefix = parseInt(prefixPart, 10);
+                if (!isNaN(parsedPrefix) && parsedPrefix >= 0 && parsedPrefix <= 32) {
+                    cidrSelect.value = parsedPrefix;
+                    cidrSlider.value = parsedPrefix;
+                }
+                raw = ipPart.trim();
+            }
+
+            const prefix = parseInt(cidrSelect.value, 10);
+            cidrLabel.textContent = `Prefix: /${prefix}`;
+
+            if (!isValidIp(raw)) {
+                errorMsg.classList.remove('hidden');
+                ipInput.classList.add('border-red-500');
+                return;
+            }
+
+            errorMsg.classList.add('hidden');
+            ipInput.classList.remove('border-red-500');
+
+            const ipInt = ipToInt(raw);
+            const maskInt = prefix === 0 ? 0 : (~0 << (32 - prefix)) >>> 0;
+            const wildcardInt = (~maskInt) >>> 0;
+            const networkInt = (ipInt & maskInt) >>> 0;
+            const broadcastInt = (networkInt | wildcardInt) >>> 0;
+
+            const totalIps = Math.pow(2, 32 - prefix);
+            let usableHosts = 0;
+            let rangeText = '';
+            const specialNote = document.getElementById('specialNote');
+            specialNote.classList.add('hidden');
+
+            if (prefix === 32) {
+                usableHosts = 1;
+                rangeText = `${intToIp(networkInt)} (Single Host)`;
+                specialNote.textContent = 'Catatan: /32 digunakan untuk rute host tunggal (tidak ada network/broadcast terpisah).';
+                specialNote.classList.remove('hidden');
+            } else if (prefix === 31) {
+                usableHosts = 2;
+                rangeText = `${intToIp(networkInt)} - ${intToIp(broadcastInt)}`;
+                specialNote.textContent = 'Catatan: /31 sesuai RFC 3021 digunakan untuk link Point-to-Point (kedua IP dapat dipakai host).';
+                specialNote.classList.remove('hidden');
+            } else {
+                usableHosts = totalIps - 2;
+                const firstHost = intToIp((networkInt + 1) >>> 0);
+                const lastHost = intToIp((broadcastInt - 1) >>> 0);
+                rangeText = `${firstHost} - ${lastHost}`;
+            }
+
+            // Update DOM
+            document.getElementById('networkAddr').textContent = intToIp(networkInt);
+            document.getElementById('broadcastAddr').textContent = intToIp(broadcastInt);
+            document.getElementById('hostRange').textContent = rangeText;
+            document.getElementById('usableHosts').textContent = usableHosts.toLocaleString('id-ID');
+            document.getElementById('totalIps').textContent = totalIps.toLocaleString('id-ID');
+            document.getElementById('subnetMask').textContent = intToIp(maskInt);
+            document.getElementById('wildcardMask').textContent = intToIp(wildcardInt);
+            document.getElementById('ipClass').textContent = getIpClass((ipInt >>> 24) & 255);
+
+            // Update Biner
+            document.getElementById('networkBin').textContent = intToBinary(networkInt);
+            document.getElementById('broadcastBin').textContent = intToBinary(broadcastInt);
+            document.getElementById('maskBin').textContent = intToBinary(maskInt);
+        }
+
+        // Event Listeners
+        ipInput.addEventListener('input', calculate);
+        cidrSelect.addEventListener('change', () => {
+            cidrSlider.value = cidrSelect.value;
+            calculate();
         });
-        vlsmResult.hidden = false;
-      } catch (error) {
-        vlsmError.textContent = error instanceof Error
-          ? error.message
-          : "Tidak dapat terhubung ke server. Coba lagi.";
-        vlsmError.hidden = false;
-      }
-    });
-  </script>
+        cidrSlider.addEventListener('input', () => {
+            cidrSelect.value = cidrSlider.value;
+            calculate();
+        });
+
+        toggleBinary.addEventListener('change', (e) => {
+            document.querySelectorAll('.binary-row').forEach(el => {
+                el.classList.toggle('hidden', !e.target.checked);
+            });
+        });
+
+        // Fungsi Salin
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.remove('opacity-0');
+            setTimeout(() => toast.classList.add('opacity-0'), 2000);
+        }
+
+        function copyText(elementId) {
+            const text = document.getElementById(elementId).textContent;
+            navigator.clipboard.writeText(text);
+            showToast(`Disalin: ${text}`);
+        }
+
+        document.getElementById('copyAllBtn').addEventListener('click', () => {
+            const summary = [
+                `IP Input: ${ipInput.value.split('/')[0]}/${cidrSelect.value}`,
+                `Network Address: ${document.getElementById('networkAddr').textContent}`,
+                `Broadcast Address: ${document.getElementById('broadcastAddr').textContent}`,
+                `Range Host: ${document.getElementById('hostRange').textContent}`,
+                `Jumlah Host Aktif: ${document.getElementById('usableHosts').textContent}`,
+                `Subnet Mask: ${document.getElementById('subnetMask').textContent}`,
+                `Wildcard Mask: ${document.getElementById('wildcardMask').textContent}`
+            ].join('\n');
+            navigator.clipboard.writeText(summary);
+            showToast('Semua hasil berhasil disalin!');
+        });
+
+        // Dark Mode Toggle
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        themeToggle.addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+            themeIcon.textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙';
+        });
+
+        // Hitung awal saat halaman dimuat
+        calculate();
+    </script>
 </body>
 </html>
