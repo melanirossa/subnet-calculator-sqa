@@ -28,3 +28,6 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "--cov=subnet_calculator_sqa --cov-report=term-missing"
+
+[tool.vercel]
+entrypoint = "src/subnet_calculator_sqa.api:app"
