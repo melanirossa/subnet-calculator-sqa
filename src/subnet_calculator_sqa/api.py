@@ -5,8 +5,8 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import FileResponse
 
-from subnet_calculator_sqa.subnet import SubnetError, calculate
-from subnet_calculator_sqa.vlsm import alokasi_vlsm
+from .subnet import SubnetError, calculate
+from .vlsm import alokasi_vlsm
 
 app = FastAPI(title="Subnet Calculator")
 INDEX_HTML = Path(__file__).resolve().parents[2] / "index.html"
